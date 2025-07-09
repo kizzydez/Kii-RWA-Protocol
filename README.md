@@ -6,7 +6,50 @@
 
 This document outlines the detailed implementation plan for the T-REX (Token for Regulated EXchanges) protocol using CosmWasm smart contracts on Kii-Chain. The T-REX protocol is designed for compliant issuance and management of security tokens on blockchain networks.
 
-## Contracts and Their Methods
+## Contracts overview
+| Contract                       | Purpose                                                                                             | Connected with                        |
+| ------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| CW_20 Base                     | Holds an asset as a CW_20                                                                           | Owner Roles, Compliance Registry      |
+| Owner Roles                    | Registers owner and special permissions to addresses                                                | -                                     |
+| Compliance Registry            | Stores compliance modules and verifies compliance on each of them                                   | Compliance whitelist wrapper          |
+| Compliance whitelist Wrapper   | A wrapper for compliance modules that whitelists some addresses, ignoring them                      | Compliance country, Compliance Claims |
+| Compliance Country Restriction | A sample compliance contract that denies identities from specific countries                         | On Chain ID                           |
+| Compliance Claims              | Compliance that denies usage of tokens from users that do not have claims for it                    | Claim topics, On Chain ID             |
+| On Chain ID                    | Registers identities for users and allows granting management of certain aspects in their behalf    | -                                     |
+| Claim Topics                   | Stores address<>trust level used to block access to tokens, can only be changed by a trusted issuer | Trusted Issuers                       |
+| Trusted Issuer                 | Maps special addresses that can change claims                                                       | -                                     |
+| Agent Roles                    | -- In the works --                                                                                  | -                                     |
+
+## Action flows
+The relation between contracts is not super clear on the first moment, but they create a system where asset usage is limited to only those that were accepted by a trusted issuer. That trusted issuer can only accept users that decided to trust it in the first place.
+
+### New asset
+With this flow we create a new asset. The asset will be limited to those that have the required claim trust level, which can only be added by the trusted issuer. The transfer of the asset will have the token pair as intermediate, which will be trusted for compliance on this specific token.
+
+- Create a new `CW20 base`
+- Set up a token pair with liquidity of that Asset <> Kii
+- Add a link between this token and the wrapped compliance modules into the `compliance registry` (any number of them)
+  - The wrap on a compliance module allows us to whitelist the token pair so it can do transfers without having an identity
+  - This needs to be done by someone with compliance manager role
+- Add a claim need between this token and a level of trust on the `claim topics`.
+  - This needs to be done by someone with claim manager role
+- Whitelist the token pair address on the `compliance whitelist wrappers` (one for each compliance module)
+  - This needs to be done by someone with compliance manager role
+
+### User registering
+For the user to be able to interact with assets, it needs to register an identity, state it trusts a common issuer and receive a specific trust level from the trusted issuer.
+
+- User creates it's own identity on `On Chain ID` contract
+- User allows the trusted issuer to manage its claims, on `On chaind ID` contract
+- Trusted issuer emits a specific trust level for the user, on the `claim topics`
+
+### First buy
+The buy will be done with a liquidity pool as a middleman, handling prices. The user needs to be registered beforehand and have a proper trust level issued so they can receive the asset.
+
+- Buy token from liquidity pool
+- Do a transfer from the pool to the buyer, directly on the `cw20 base` of the T-REX
+
+# Contracts and Their Methods
 
 ### 1. CW20 T-REX Token
 
