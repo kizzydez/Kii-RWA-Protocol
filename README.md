@@ -9,7 +9,7 @@ This document outlines the detailed implementation plan for the T-REX (Token for
 ## Contracts overview
 | Contract                       | Purpose                                                                                             | Connected with                        |
 | ------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| Base CW_20                     | Holds an asset as a CW_20                                                                           | Owner Roles, Compliance Registry      |
+| CW_20 Base                     | Holds an asset as a CW_20                                                                           | Owner Roles, Compliance Registry      |
 | Owner Roles                    | Registers owner and special permissions to addresses                                                | -                                     |
 | Compliance Registry            | Stores compliance modules and verifies compliance on each of them                                   | Compliance whitelist wrapper          |
 | Compliance whitelist Wrapper   | A wrapper for compliance modules that whitelists some addresses, ignoring them                      | Compliance country, Compliance Claims |
