@@ -1,0 +1,70 @@
++ // File: integration-tests/compliance_failures.rs
++
++ use cosmwasm_std::Uint128;
++ use cw_multi_test::{App, Executor};
++ use crate::helpers::{setup_compliant_token_suite, mint_tokens};
++
++ #[test]
++ fn test_transfer_fails_when_recipient_not_verified() {
++     let mut app = App::default();
++     let (owner, sender, recipient, token, identity, compliance) = setup_compliant_token_suite(&mut app);
++
++     // Register only sender
++     identity.add_verified(&mut app, &sender);
++
++     // Mint to sender
++     mint_tokens(&mut app, &token, &sender, Uint128::new(100));
++
++     // Set compliance rules: allow sender to send to anyone (for test)
++     compliance.set_transfer_permission(&mut app, &sender, true);
++
++     // Try to transfer to unverified recipient
++     let err = token
++         .transfer(&mut app, &sender, &recipient, Uint128::new(50))
++         .unwrap_err();
++     assert!(
++         err.to_string().contains("Compliance check failed"),
++         "Expected compliance failure"
++     );
++ }
++
++ #[test]
++ fn test_transfer_from_fails_when_sender_not_verified() {
++     let mut app = App::default();
++     let (owner, sender, recipient, token, identity, compliance) = setup_compliant_token_suite(&mut app);
++
++     // Only verify recipient
++     identity.add_verified(&mut app, &recipient);
++
++     // Mint to sender
++     mint_tokens(&mut app, &token, &sender, Uint128::new(100));
++
++     // Approve recipient
++     token.approve(&mut app, &sender, &recipient, Uint128::new(50)).unwrap();
++
++     // Attempt transfer_from with unverified sender
++     let err = token
++         .transfer_from(&mut app, &recipient, &sender, &owner, Uint128::new(30))
++         .unwrap_err();
++     assert!(
++         err.to_string().contains("Compliance check failed"),
++         "Expected compliance failure"
++     );
++ }
+
+If these helper functions (setup_compliant_token_suite, mint_tokens, etc.) don’t yet exist in your test suite, define them under a shared helper file such as integration-tests/helpers.rs:
+pub fn setup_compliant_token_suite(app: &mut App) -> (...) {
+    // Deploy T-REX contract, identity registry, compliance module
+    // Register addresses, link contracts, return tuple
+}
+
+
+
+README/CONTRIBUTING.md Update
+
++ ## Compliance Testing
++ Ensure all T-REX deployments are covered by both positive and negative compliance logic tests.
++ Example: simulate failures like unauthorized recipient, expired permissions, or invalid identity.
+
+
+
